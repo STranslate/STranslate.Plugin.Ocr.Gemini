@@ -3,7 +3,7 @@
   "Name": "Gemini OCR",
   "Description": "Official Gemini OCR plugin for STranslate",
   "Author": "zggsong",
-  "Version": "1.0.0",
+  "Version": "1.0.1",
   "Website": "https://github.com/STranslate/STranslate.Plugin.Ocr.Gemini",
   "ExecuteFileName": "STranslate.Plugin.Ocr.Gemini.dll",
   "IconPath": "icon.png"
