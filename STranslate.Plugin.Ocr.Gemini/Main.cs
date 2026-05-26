@@ -84,6 +84,8 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
         // 温度限定
         var temperature = Math.Clamp(Settings.Temperature, 0, 2);
 
+        var thinkingBudget = (int)Math.Clamp(Settings.ThinkingBudget, -1, 24576);
+
 
         // 替换Prompt关键字
         var messages = (Prompts.FirstOrDefault(x => x.IsEnabled) ?? throw new Exception("请先完善Prompt配置"))
@@ -186,6 +188,11 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
                 }
             }, 
 #endif
+            generationConfig = new
+            {
+                temperature,
+                thinkingConfig = new { thinkingBudget }
+            },
             safetySettings = new object[]
             {
                 new
