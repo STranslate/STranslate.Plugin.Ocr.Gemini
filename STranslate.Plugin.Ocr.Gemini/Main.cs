@@ -16,6 +16,8 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
 
     public IEnumerable<LangEnum> SupportedLanguages => Enum.GetValues<LangEnum>();
 
+    public bool SupportBoxPoints() => true;
+
     public ObservableCollection<Prompt> Prompts { get; set; } = [];
 
     public Prompt? SelectedPrompt
@@ -74,36 +76,36 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
 
         // 处理图片数据
         var base64Str = Convert.ToBase64String(request.ImageData);
-        // https://ai.google.dev/gemini-api/docs/image-understanding?hl=zh-cn#supported-formats
-        var formatStr = "image/png";/* (Singleton<ConfigHelper>.Instance.CurrentConfig?.OcrImageQuality ?? OcrImageQualityEnum.Medium) switch
-        {
-            OcrImageQualityEnum.Low => "image/jpeg",
-            OcrImageQualityEnum.Medium => "image/png",
-            _ => "image/png"//即便是bmp 使用 png 标签 gemini 也能正常识别（gemini-2.0-flash-exp）
-        };*/
+        var formatStr = "image/png";
+        
         // 温度限定
         var temperature = Math.Clamp(Settings.Temperature, 0, 2);
-
         var thinkingBudget = (int)Math.Clamp(Settings.ThinkingBudget, -1, 24576);
 
-
-        // 替换Prompt关键字
-        var messages = (Prompts.FirstOrDefault(x => x.IsEnabled) ?? throw new Exception("请先完善Prompt配置"))
-            .Clone()
-            .Items;
+        // 替换Prompt关键字并生成 Prompt
+        var prompts = Prompts.FirstOrDefault(x => x.IsEnabled) ?? throw new Exception("请先完善Prompt配置");
+        var messages = prompts.Clone().Items;
         messages.ToList()
             .ForEach(item =>
                 item.Content = item.Content.Replace("$target", ConvertLanguage(request.Language)));
 
         var userPrompt = messages.LastOrDefault() ?? throw new Exception("Prompt配置为空");
         messages.Remove(userPrompt);
+
+        // 针对坐标框请求，调整 User Prompt，指导其返回带有 box_2d 坐标的结构化结果
+        var hasSizeInfo = request.PixelWidth > 0 && request.PixelHeight > 0;
+        if (hasSizeInfo)
+        {
+            userPrompt.Content += "\nDetect and transcribe all text segments within the image. You must output the bounding box coordinates for each text segment using a normalized 0-1000 scale. The bounding box coordinates must be in [ymin, xmin, ymax, xmax] format (e.g. [100, 150, 200, 300]). Do not omit any text lines.";
+        }
+
         var messages2 = new List<object>();
         foreach (var item in messages)
         {
             messages2.Add(new
             {
                 role = item.Role,
-                part = new[]
+                parts = new[]
                 {
                     new { text = item.Content }
                 }
@@ -129,24 +131,14 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
             }
         });
 
-        var content = new
+        // 根据是否有图片高宽信息，构建 generationConfig
+        object generationConfig;
+        if (hasSizeInfo)
         {
-            contents = messages2,
-#if false
-            systemInstruction = new
-            {
-                role = "user",
-                parts = new[]
-                {
-                    new
-                    {
-                        text = "You are a specialized OCR engine that accurately extracts each text from the image."
-                    }
-                }
-            },
             generationConfig = new
             {
-                temperature = aTemperature,
+                temperature,
+                thinkingConfig = thinkingBudget > 0 ? new { thinkingBudget } : null,
                 response_mime_type = "application/json",
                 response_schema = new
                 {
@@ -156,43 +148,31 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
                         type = "OBJECT",
                         properties = new
                         {
-                            words = new
+                            text = new { type = "STRING" },
+                            box_2d = new
                             {
-                                type = "STRING"
-                            },
-                            location = new
-                            {
-                                type = "OBJECT",
-                                properties = new
-                                {
-                                    top = new
-                                    {
-                                        type = "NUMBER"
-                                    },
-                                    left = new
-                                    {
-                                        type = "NUMBER"
-                                    },
-                                    width = new
-                                    {
-                                        type = "NUMBER"
-                                    },
-                                    height = new
-                                    {
-                                        type = "NUMBER"
-                                    }
-                                }
+                                type = "ARRAY",
+                                items = new { type = "INTEGER" }
                             }
-                        }
+                        },
+                        required = new[] { "text", "box_2d" }
                     }
                 }
-            }, 
-#endif
+            };
+        }
+        else
+        {
             generationConfig = new
             {
                 temperature,
-                thinkingConfig = new { thinkingBudget }
-            },
+                thinkingConfig = thinkingBudget > 0 ? new { thinkingBudget } : null
+            };
+        }
+
+        var content = new
+        {
+            contents = messages2,
+            generationConfig,
             safetySettings = new object[]
             {
                 new
@@ -226,9 +206,62 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
         var data = firstPart?["text"]?.ToString() ?? throw new Exception($"No data\nRaw: {response}");
 
         var result = new OcrResult();
-        foreach (var item in data.Split("\n").ToList().Select(item => new OcrContent { Text = item }))
+
+        if (hasSizeInfo)
         {
-            result.OcrContents.Add(item);
+            try
+            {
+                var jsonArray = JsonNode.Parse(data) as JsonArray;
+                if (jsonArray != null)
+                {
+                    foreach (var node in jsonArray)
+                    {
+                        if (node == null) continue;
+                        var text = node["text"]?.ToString();
+                        var boxArray = node["box_2d"] as JsonArray;
+                        if (string.IsNullOrEmpty(text) || boxArray == null || boxArray.Count < 4) continue;
+
+                        if (int.TryParse(boxArray[0]?.ToString(), out int ymin) &&
+                            int.TryParse(boxArray[1]?.ToString(), out int xmin) &&
+                            int.TryParse(boxArray[2]?.ToString(), out int ymax) &&
+                            int.TryParse(boxArray[3]?.ToString(), out int xmax))
+                        {
+                            var ocrContent = new OcrContent { Text = text };
+
+                            // box_2d 归一化坐标在 0-1000 之间，需映射至图片真实物理像素：
+                            // 顺时针依次添加：左上、右上、右下、左下 4个顶点坐标
+                            float w = request.PixelWidth;
+                            float h = request.PixelHeight;
+
+                            ocrContent.BoxPoints.Add(new BoxPoint(xmin * w / 1000f, ymin * h / 1000f)); // 左上
+                            ocrContent.BoxPoints.Add(new BoxPoint(xmax * w / 1000f, ymin * h / 1000f)); // 右上
+                            ocrContent.BoxPoints.Add(new BoxPoint(xmax * w / 1000f, ymax * h / 1000f)); // 右下
+                            ocrContent.BoxPoints.Add(new BoxPoint(xmin * w / 1000f, ymax * h / 1000f)); // 左下
+
+                            result.OcrContents.Add(ocrContent);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // 解析结构化 JSON 失败时，降级采用传统按行切分机制
+                System.Diagnostics.Debug.WriteLine($"Failed to parse structure coordinates: {ex.Message}");
+                hasSizeInfo = false;
+            }
+        }
+
+        // 如果未请求位置或位置解析失败/降级
+        if (!hasSizeInfo || result.OcrContents.Count == 0)
+        {
+            result.OcrContents.Clear();
+            foreach (var item in data.Split('\n').ToList().Select(item => new OcrContent { Text = item }))
+            {
+                if (!string.IsNullOrWhiteSpace(item.Text))
+                {
+                    result.OcrContents.Add(item);
+                }
+            }
         }
 
         return result;
