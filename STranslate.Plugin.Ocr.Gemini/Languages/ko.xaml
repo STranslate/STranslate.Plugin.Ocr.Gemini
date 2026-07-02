@@ -1,0 +1,22 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Url">URL</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Url_Description">Gemini API 서비스 주소를 설정합니다&#x0a;인터페이스 API 주소에는 Path를 입력하지 마세요. 명확한 의도가 있는 경우는 예외입니다.</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ApiKey">API 키</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ApiKey_Placeholder">API 키를 입력하세요</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ApiKey_Description">Gemini API 키를 입력하세요</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Model">모델 선택</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Header">프롬프트 설정</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Description">번역에 사용할 프롬프트 템플릿을 선택하거나 편집합니다</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Placeholder">프롬프트 템플릿 선택</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_EditPrompt_ToolTip">프롬프트 편집</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_EditPrompt_Content">편집</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Temperature">온도 제어</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Temperature_Description">모델 출력의 무작위성을 제어합니다</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ThinkingBudget">사고 예산</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ThinkingBudget_Description">모델의 사고 예산을 제한합니다&#x0a;-1은 자동, 0은 비활성화, 양의 정수는 최대 사고 예산(토큰 수)을 의미합니다.</sys:String>
+
+</ResourceDictionary>
