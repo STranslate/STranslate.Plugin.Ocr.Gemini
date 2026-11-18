@@ -10,7 +10,7 @@
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ApiKey_Description">Gemini API 키를 입력하세요</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Model">모델 선택</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Header">프롬프트 설정</sys:String>
-    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Description">번역에 사용할 프롬프트 템플릿을 선택하거나 편집합니다</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Description">텍스트 인식에 사용할 프롬프트 템플릿을 선택하거나 편집합니다</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Placeholder">프롬프트 템플릿 선택</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_EditPrompt_ToolTip">프롬프트 편집</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_EditPrompt_Content">편집</sys:String>

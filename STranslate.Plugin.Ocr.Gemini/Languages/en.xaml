@@ -10,7 +10,7 @@
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_ApiKey_Description">Enter your Gemini API key</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Model">Select a model</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Header">Prompt Configuration</sys:String>
-    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Description">Select or edit the prompt template for translation</sys:String>
+    <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Description">Select or edit the prompt template for text recognition</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_Prompt_Placeholder">Select a prompt template</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_EditPrompt_ToolTip">Edit Prompt</sys:String>
     <sys:String x:Key="STranslate_Plugin_Translate_STranslate.Plugin.Ocr.Gemini_EditPrompt_Content">Edit</sys:String>

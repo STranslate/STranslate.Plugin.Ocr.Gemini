@@ -61,18 +61,9 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
 
     public void Dispose() => _viewModel?.Dispose();
 
-    public string? GetLanguage(LangEnum langEnum) => null;
-
     public async Task<OcrResult> RecognizeAsync(OcrRequest request, CancellationToken cancellationToken)
     {
-        UriBuilder uriBuilder = new(Settings.Url);
-
-        // 选择模型
-        var model = Settings.Model.Trim();
-        model = string.IsNullOrEmpty(model) ? "gemini-flash-latest" : model;
-
-        uriBuilder.Path = $"/v1beta/models/{model}:generateContent";
-        uriBuilder.Query = $"?key={Settings.ApiKey}";
+        var (url, options) = GeminiRequest.Create(Settings, stream: false);
 
         // 处理图片数据
         var base64Str = Convert.ToBase64String(request.ImageData);
@@ -85,12 +76,15 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
         // 替换Prompt关键字并生成 Prompt
         var prompts = Prompts.FirstOrDefault(x => x.IsEnabled) ?? throw new Exception("请先完善Prompt配置");
         var messages = prompts.Clone().Items;
+        var language = GetLanguage(request.Language);
         messages.ToList()
             .ForEach(item =>
-                item.Content = item.Content.Replace("$target", ConvertLanguage(request.Language)));
+                item.Content = item.Content.Replace("$target", language ?? "Requires you to identify automatically"));
 
         var userPrompt = messages.LastOrDefault() ?? throw new Exception("Prompt配置为空");
         messages.Remove(userPrompt);
+        if (language is not null)
+            userPrompt.Content += $"\nUse {language} as a language hint. Transcribe all text in the original language without translating it.";
 
         // 针对坐标框请求，调整 User Prompt，指导其返回带有 box_2d 坐标的结构化结果
         var hasSizeInfo = request.PixelWidth > 0 && request.PixelHeight > 0;
@@ -198,7 +192,7 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
             }
         };
 
-        var response = await Context.HttpService.PostAsync(uriBuilder.Uri.ToString(), content, cancellationToken: cancellationToken);
+        var response = await Context.HttpService.PostAsync(url, content, options, cancellationToken);
         var parsedData = JsonNode.Parse(response);
         var firstCandidate = parsedData?["candidates"] is JsonArray candidates && candidates.Count > 0 ? candidates[0] : null;
         var contentNode = firstCandidate?["content"];
@@ -267,9 +261,8 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
         return result;
     }
 
-    private string ConvertLanguage(LangEnum langEnum) => langEnum switch
+    public string? GetLanguage(LangEnum langEnum) => langEnum switch
     {
-        LangEnum.Auto => "Requires you to identify automatically",
         LangEnum.ChineseSimplified => "Simplified Chinese",
         LangEnum.ChineseTraditional => "Traditional Chinese",
         LangEnum.Cantonese => "Cantonese",
@@ -300,6 +293,8 @@ public class Main : ObservableObject, IOcrPlugin, ILlm
         LangEnum.Polish => "Polish",
         LangEnum.Dutch => "Dutch",
         LangEnum.Ukrainian => "Ukrainian",
-        _ => "Requires you to identify automatically"
+        LangEnum.Uzbek => "Uzbek",
+        LangEnum.Uyghur => "Uyghur",
+        _ => null
     };
 }
